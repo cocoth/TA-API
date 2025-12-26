@@ -14,6 +14,11 @@ export const authRoute = createRouteGroup({
             controller: authController.login
         },
         {
+            path: '/register',
+            method: 'POST',
+            controller: authController.register
+        },
+        {
             path: '/logout',
             method: 'POST',
             controller: authController.logout

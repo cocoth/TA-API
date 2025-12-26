@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { UserRepo } from "../repo/user.repo";
 
 interface User {
     id: number;
@@ -23,6 +24,43 @@ const users: User[] = [
 
 
 export class UserController {
+    async getMe(req: Request, res: Response) {
+        const userId = req.user?.userId;
+
+        if (!userId) {
+            return res.sendError({
+                code: 401,
+                message: "Unauthorized",
+            });
+        }
+
+        try {
+            const user = await UserRepo.getUserById(userId);
+
+            if (!user) {
+                return res.sendError({
+                    code: 404,
+                    message: "User not found",
+                });
+            }
+
+            return res.sendResponse({
+                code: 200,
+                message: "User retrieved successfully",
+                data: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                }
+            });
+        } catch (error) {
+            return res.sendError({
+                code: 500,
+                message: "Failed to get user data",
+            });
+        }
+    }
+
     getUser(req: Request, res: Response) {
         const { id } = req.params
         if(!id) {

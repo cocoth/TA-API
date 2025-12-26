@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from "express";
+import JWT from "../lib/tokenizer";
 
 export class AuthMiddleware {
     static verifyAuth(req: Request, res: Response, next: NextFunction) {
@@ -6,6 +7,16 @@ export class AuthMiddleware {
         if (!token) {
             return res.status(401).json({ message: "Unauthorized" });
         }
+
+        const decoded = JWT.verify<{ userId: number }>(token);
+        if (!decoded || !decoded.userId) {
+            return res.status(401).json({ message: "Invalid token" });
+        }
+
+        req.user = {
+            userId: decoded.userId
+        };
+
         next();
     }
 
@@ -41,7 +52,7 @@ export class AuthMiddleware {
         res.header('Referrer-Policy', 'strict-origin-when-cross-origin');
         res.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
 
-        res.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none';");
+        res.header('Content-Security-Policy', "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://cdn.jsdelivr.net https://newsapi.org; frame-ancestors 'none';");
         res.header('X-Security-Level', 'strict');
 
         if (req.method === "OPTIONS") {

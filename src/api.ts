@@ -24,23 +24,19 @@ app.use(loggerMiddleware);
 const apiPath = "/api/v1";
 app.use(apiPath, mainRouter);
 
-app.use((req, res, next) => {
-    console.log(req.url)
-    console.log(req.path)
-    if (
-        req.url.startsWith("/api/")
-        && !req.url.startsWith(apiPath)
-    ) {
-        next();
-    }
-    return res.status(404).json({
-        success: false,
-        status: 404,
-        message: "Endpoint not found",
-        data: null
-    });
-});
+app.use(express.static('src/public'));
 
+app.use((req, res) => {
+    if (req.url.startsWith("/api/")) {
+        return res.status(404).json({
+            success: false,
+            status: 404,
+            message: "Endpoint not found",
+            data: null
+        });
+    }
+    res.status(404).send('Not Found');
+});
 
 server.listen(PORT, () => {
     endpointManager.printAllEndpoints(apiPath);

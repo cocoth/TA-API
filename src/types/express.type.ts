@@ -15,6 +15,12 @@ interface ApiResponse<T> {
 }
 
 declare module "express-serve-static-core" {
+    interface Request {
+        user?: {
+            userId: number;
+        };
+    }
+
     interface Response {
         /**
          * Send a standardized API response.

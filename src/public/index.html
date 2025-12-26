@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="./js/navbar.js"></script>
+    <title>Feedbacks</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body class="text-white">
+    <main>
+        <div class="my-8">
+            <section>
+                <h1
+                    class="text-5xl font-bold text-center mt-16 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+                    Feedbacks List
+                </h1>
+                <div class="flex gap-3 justify-center items-center mt-12 px-3">
+                    <button id="prev-btn" onclick="changePage(-1)"
+                        class="rounded-lg border border-blue-400/30 text-white px-4 py-2 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 font-medium">
+                        ← Prev
+                    </button>
+                    <p class="text-lg font-medium glass-effect px-6 py-2 rounded-lg border border-blue-400/30">
+                        Page <span id="page-info" class="text-blue-400 font-bold">1</span>
+                    </p>
+                    <button id="next-btn" onclick="changePage(1)"
+                        class="rounded-lg cursor-pointer glass-effect border border-blue-400/30 text-white px-4 py-2 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 font-medium">
+                        Next →
+                    </button>
+                </div>
+            </section>
+            <div id="feedbacks-container"
+                class="mt-12 w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 px-6 max-w-7xl mx-auto">
+                <!-- Feedback items will be appended here -->
+            </div>
+        </div>
+    </main>
+</body>
+
+<script>
+    const el = document.getElementById('feedbacks-container');
+
+    const query = new URLSearchParams(window.location.search);
+    const initialPage = parseInt(query.get('page')) || 1;
+    let currentPage = initialPage;
+
+    function spawnCard(data){
+        const card = document.createElement('div');
+         card.className = 'glass-effect p-5 rounded-xl border border-blue-400/30 card-hover cursor-pointer';
+         card.onclick = () => {
+            const articleId = encodeURIComponent(data.url || data.title);
+            const title = encodeURIComponent(data.title);
+            const author = encodeURIComponent(data.author || 'Unknown');
+            window.location.href = `/feedback?id=${articleId}&title=${title}&author=${author}`;
+         };
+            card.innerHTML = `
+                <div class="flex flex-col h-full justify-between">
+                    <section>
+                        <img src="${data.urlToImage || 'https://via.placeholder.com/400x200'}" alt="${data.title}" class="w-full h-48 object-cover rounded-lg mb-4 border border-blue-400/20">
+                        <a href="${data.url}" target="_blank" onclick="event.stopPropagation();" class="cursor-pointer font-bold text-xl mb-3 text-blue-300 hover:text-blue-200">${data.title}</a>
+                        <p class="text-gray-300 text-sm mb-3">${data.content || data.description || ''}</p>
+                    </section>
+                    <section>
+                        <p class="text-sm text-gray-400">By: <span class="text-purple-400">${data.author || 'Unknown'}</span></p>
+                    </section>
+                </div>
+            `;
+            el.appendChild(card);
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        const response = await fetch(`/api/v1/feedbacks/${currentPage}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        const data = await response.json();
+        console.log(data);
+
+        data.data.articles.forEach(feedback => {
+            spawnCard(feedback);
+        });
+        document.getElementById('page-info').innerText = currentPage;
+
+        // Update button states
+        document.getElementById('prev-btn').disabled = currentPage <= 1;
+
+    });
+
+    async function fetchFeedbacks(page = 1) {
+        const response = await fetch(`/api/v1/feedbacks/${page}`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        return await response.json();
+    }
+
+    async function changePage(delta) {
+        currentPage += delta;
+
+        // Update URL query parameter
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('page', currentPage);
+        window.history.pushState({}, '', newUrl);
+
+        const data = await fetchFeedbacks(currentPage);
+
+        const feedbacksContainer = document.getElementById('feedbacks-container');
+        feedbacksContainer.innerHTML = '';
+
+        data.data.articles.forEach(feedback => {
+            spawnCard(feedback);
+        });
+
+        document.getElementById('page-info').innerText = currentPage;
+
+        document.getElementById('prev-btn').disabled = currentPage <= 1;
+        document.getElementById('prev-btn').className = currentPage <= 1 ? 'rounded-lg border border-blue-400/30 text-white px-4 py-2 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/10 font-medium' : 'rounded-lg border border-blue-400/30 text-white px-4 py-2 cursor-pointer hover:bg-white/10 font-medium';
+        document.getElementById('next-btn').disabled = data.data.articles.length === 0;
+    }
+</script>
+
+</html>
